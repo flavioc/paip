@@ -64,11 +64,21 @@
   "An op is appropriate to a goal if it is in its add-list."
   (member-equal goal (op-add-list op)))
 
+(defun action-p (x)
+  "Is x something that is (start) or (executing ...)?"
+  (or (equal x '(start)) (executing-p x)))
+
 (defun GPS (state goals &optional (*ops* *ops*))
   "General Problem Solver: from state, achieve goals using *ops*."
-  (remove-if #'atom (achieve-all (cons '(start) state) goals nil)))
+  (find-all-if #'action-p
+              (achieve-all (cons '(start) state) goals nil)))
   
 (defun achieve-all (state goals goal-stack)
+  "Achieve each goal, trying several orderings."
+  (some #'(lambda (goals) (achieve-each state goals goal-stack))
+        (orderings goals)))
+
+(defun achieve-each (state goals goal-stack)
   "Archieve each goal, make sure they still hold at the end."
   (let ((current-state state))
     (if (and (every #'(lambda (g)
@@ -78,6 +88,11 @@
              (subsetp goals current-state :test #'equal))
         current-state)))
 
+(defun orderings (l)
+  (if (> (length l) 1)
+    (list l (reverse l))
+    (list l)))
+
 (defun achieve (state goal goal-stack)
   "A goal is achieved if it already holds,
   or if there is an appropriate op for it that is applicable."
@@ -85,7 +100,16 @@
   (cond ((member-equal goal state) state)
         ((member-equal goal goal-stack) nil)
         (t (some #'(lambda (op) (apply-op state goal op goal-stack))
-                (find-all goal *ops* :test #'appropriate-p)))))
+                 (appropriate-ops goal state)))))
+
+(defun appropriate-ops (goal state)
+  "Return a list of appropriate operators,
+  sorted by the number of unfulfilled preconditions."
+  (sort (copy-list (find-all goal *ops* :test #'appropriate-p)) #'<
+        :key #'(lambda (op)
+                 (count-if #'(lambda (precond)
+                               (not (member-equal precond state)))
+                           (op-preconds op)))))
 
 (defun apply-op (state goal op goal-stack)
   "Return a new, transformed state if op is applicable."

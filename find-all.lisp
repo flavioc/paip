@@ -7,3 +7,6 @@
       :test-not (complement test-not) keyword-args)
     (apply #'remove item sequence
       :test (complement test) keyword-args)))
+
+(defun find-all-if (fn sequence)
+  (remove-if-not fn sequence))
