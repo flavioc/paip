@@ -1,5 +1,5 @@
 
-(defvar *dbg-ids* "Identifiers used by dbg")
+(defvar *dbg-ids* '() "Identifiers used by dbg")
 
 (defun dbg (id format-string &rest args)
   "Print debugging info if (DEBUG ID) has been specified"
@@ -7,7 +7,7 @@
     (fresh-line *debug-io*)
     (apply #'format *debug-io* format-string args)))
 
-(defun debug (&rest ids)
+(defun debug-this (&rest ids)
   "Start dbg output on the given ids."
   (setf *dbg-ids* (union ids *dbg-ids*)))
   
