@@ -11,8 +11,12 @@
      
 (defun GPS (*state* goals *ops*)
   "General Problem Solver: archieve all goals using *ops*"
-  (if (every #'archieve goals) 'solved))
-    
+  (if (archieve-all goals) 'solved))
+
+(defun archieve-all (goals)
+  "Try to archieve each goal, then make sure they still hold"
+  (and (every #'archieve goals) (subsetp goals *state*)))
+  
 (defun archieve (goal)
   "A goal is archieved if it already holds
   or if there is an appropriate op for it that is applicable"
@@ -22,7 +26,7 @@
 
 (defun apply-op (op)
   "Print a message and update *state* if op is applicable"
-  (when (every #'archieve (op-preconds op))
+  (when (archieve-all (op-preconds op))
     (print (list 'executing (op-action op)))
     (setf *state* (set-difference *state* (op-del-list op)))
     (setf *state* (union *state* (op-add-list op)))
