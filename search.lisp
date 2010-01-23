@@ -4,6 +4,18 @@
 
 (defconstant fail nil)
 
+(defun iter-tree-search (states goal-p successors combiner)
+  "Find a state that satisfies goal-p. Start with states,
+  and search according to successors and combiner."
+  (loop
+    (cond ((null states) (return-from iter-tree-search fail))
+          ((funcall goal-p (first states)) (return-from iter-tree-search (first states)))
+          (t
+            (setf states
+                  (funcall combiner
+                           (funcall successors (first states))
+                           (rest states)))))))
+
 (defun tree-search (states goal-p successors combiner)
   "Find a state that satisfies goal-p. Start with states,
   and search according to successors and combiner."
@@ -50,7 +62,11 @@
 (defun sorter (cost-fn)
   "Return a combiner function that sorts according to cost-fn."
   #'(lambda (new old)
-      (sort (append new old) #'< :key cost-fn)))
+      (merge 'list
+             (sort new #'< :key cost-fn)
+             old
+             #'<
+             :key cost-fn)))
 
 (defun best-first-search (start goal-p successors cost-fn)
   "Search lowest cost states first until goal is reached."
@@ -186,7 +202,7 @@
          (iter-wide-search start goal-p successors cost-fn :width (+ width 1) :max max))))
 
 (defun graph-search (states goal-p successors combiner
-                            &optional (state= #'eql) old-states)
+                            &optional (state= #'eql) (old-states (make-hash-table)))
   "Find a state that satisfies goal-p. Start with states,
   and search according to successors and combiner.
   Don't try the same state twice."
@@ -199,15 +215,16 @@
                (new-states states successors state= old-states)
                (rest states))
              goal-p successors combiner state=
-             (adjoin (first states) old-states
-                     :test state=)))))
+             (progn
+               (setf (gethash (first states) old-states) t)
+               old-states)))))
 
 (defun new-states (states successors state= old-states)
   "Generate successor states that have not been seen before."
   (remove-if
     #'(lambda (state)
         (or (member state states :test state=)
-            (member state old-states :test state=)))
+            (gethash state old-states)))
     (funcall successors (first states))))
 
 (defun next2 (x) (list (+ x 1) (+ x 2)))
@@ -279,6 +296,20 @@
     (beam-search
       start #'(lambda (x)
                 (when (funcall goal-p x) (push x solutions))
+                nil)
+      successors cost-fn beam-width)
+    solutions))
+
+(defun search-n (n start goal-p successors cost-fn beam-width)
+  "Find first n solutions to a search problem, using beam search."
+  (let (solutions (count 0))
+    (beam-search
+      start #'(lambda (x)
+                (when (funcall goal-p x)
+                  (push x solutions)
+                  (incf count)
+                  (when (= count n)
+                    (return-from search-n solutions)))
                 nil)
       successors cost-fn beam-width)
     solutions))

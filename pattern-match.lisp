@@ -6,7 +6,8 @@
 
 (defun variable-p (x)
   "Is x a variable (a symbol beginnng with '?')?"
-  (and (symbolp x) (equal (char (symbol-name x) 0) #\?)))
+  (and (symbolp x)
+       (equal (char (symbol-name x) 0) #\?)))
 
 (defun simple-equal (x y)
   "Are x and y equal ? (Don't check inside strings.)"
@@ -188,6 +189,9 @@
 (defun pat-match (pattern input &optional (bindings no-bindings))
   "Match pattern against input in the context of the bindings"
   (cond ((eq bindings fail) fail)
+        ((and (equal pattern '??) ;; escaped ?
+              (equal input '?))
+         bindings)
         ((variable-p pattern)
          (match-variable pattern input bindings))
         ((eql pattern input) bindings)
