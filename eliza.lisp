@@ -248,7 +248,7 @@
           (cond
             (result 
               (setf saved-input input)
-              (format t "~a" (format-output (flatten result))))
+              (format t "~a"  (format-output (flatten result))))
             (t
               (format t "Tell me more about ~a"
                       (format-output saved-input)))))))))
@@ -260,7 +260,7 @@
               (if (not (eq result fail))
                 (sublis (switch-viewpoint result)
                         (random-elt (rule-responses rule))))))
-        *eliza-rules*))
+        *my-rules*))
 
 (defun switch-viewpoint (words)
   "Change I to you and vice versa, and so on."
