@@ -102,7 +102,46 @@
                                     (remove equation equations))
                              (cons answer known))))))
             equations)
+      (let ((eqs (find-linear-pair equations)))
+        (when eqs
+          (let* ((eq1 (first eqs))
+                 (eq2 (second eqs))
+                 (vars (third eqs))
+                 (var1 (first vars))
+                 (var2 (second vars))
+                 (isolated-eq1 (isolate eq1 var1))
+                 (isolated-eq2 (isolate eq2 var2))
+                 (new-eq2 (mkexp var2 '= (subst (expr-rhs isolated-eq1) var1 (expr-rhs isolated-eq2))))
+                 (new-eq1 (mkexp var1 '= (subst (expr-rhs isolated-eq2) var2 (expr-rhs isolated-eq1))))
+                 (new-equations1 (remove eq1 (remove eq2 equations)))
+                 (new-equations (cons new-eq1 (cons new-eq2 new-equations1))))
+            (warn "~a" new-equations)
+            (solve new-equations known))))
       known))
+
+(defun find-linear-pair (equations)
+  (dolist (eq1 equations)
+    (let ((vars (find-vars eq1)))
+      (when (= (length vars) 2)
+        (let ((eq2 (find-other-pair vars (remove eq1 equations))))
+          (when eq2 
+            (return-from find-linear-pair (list eq1 eq2 vars))))))))
+
+(defun find-other-pair (vars rest-equations)
+  (dolist (eq2 rest-equations)
+    (let ((vars2 (find-vars eq2)))
+      (when (null (set-difference vars vars2))
+        (return-from find-other-pair eq2)))))
+
+(defun find-vars (equation)
+  (cond
+    ((symbolp equation) (list equation))
+    ((numberp equation) '())
+    ((expr-p equation)
+     (union
+       (find-vars (expr-lhs equation))
+       (find-vars (expr-rhs equation))))))
+
 
 (defun isolate (e x)
   "Isolate the lone x in e on the left-hand side of e."
@@ -205,3 +244,9 @@
   '(Fran's age divided by Robin's height is one half Kelly's IQ |.|
            Kelly's IQ minus 80 is Robin's height |.|
            If Robin is 4 feet tall |,| how old is Fran ?))
+
+(defparameter *eq1*
+  '(= 100 (+ OVERHEAD (* RUNNING 40))))
+(defparameter *eq2*
+  '(= OVERHEAD (* 10 RUNNING)))
+(defparameter *eqs* (list *eq1* *eq2*))

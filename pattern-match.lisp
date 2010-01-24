@@ -43,10 +43,9 @@
 
 (defun match-variable (var input bindings)
   "Does VAR match input? Uses (or updates) and returns bindings."
-  (let ((binding (get-binding var bindings))
-        (new-input (if (consp input) input (list input))))
-    (cond ((not binding) (extend-bindings var new-input bindings))
-          ((simple-equal new-input (binding-val binding)) bindings)
+  (let ((binding (get-binding var bindings)))
+    (cond ((not binding) (extend-bindings var input bindings))
+          ((simple-equal input (binding-val binding)) bindings)
           (t fail))))
 
 (setf (get '?is 'single-match) 'match-is)
@@ -124,6 +123,11 @@
    (if (match-or patterns input bindings)
      fail
      bindings))
+
+(defun single-matcher (pattern input bindings)
+  "Call the right function for this kind of single pattern."
+  (funcall (single-match-fn (first pattern))
+           (rest pattern) input bindings))
 
 (defun segment-match (pattern input bindings &optional (start 0))
   "Match the segment pattern ((?* var) . pat) against input."
