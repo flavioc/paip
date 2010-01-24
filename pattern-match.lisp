@@ -24,6 +24,10 @@
   "Get the value part of a single binding."
   (cdr binding))
 
+(defun binding-var (binding)
+  "Get the var part of a single binding."
+  (car binding))
+
 (defun make-binding (var val) (cons var val))
 
 (defun lookup (var bindings)
